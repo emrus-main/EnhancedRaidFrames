@@ -158,15 +158,9 @@ function EnhancedRaidFrames:SetIndicatorAppearance(frame)
 			end
 
 			--create a text overlay frame that will show our countdown text
-			if not EnhancedRaidFrames.db.profile["showCooldownAnimation"..i] or not EnhancedRaidFrames.db.profile["showIcon"..i] then
-				button.text:SetText("")
-				button.text = button:CreateFontString(nil, "OVERLAY", "NumberFontNormalSmall") --if we don't show the cooldown animation or the icon, text should be on the parent frame
-				button.text:SetPoint("CENTER", button, "CENTER", 0, 0)
-			else
-				button.text:SetText("")
-				button.text = button.cooldown:CreateFontString(nil, "OVERLAY", "NumberFontNormalSmall") --if we show the cooldown animation, text should be on the child '.cooldown' frame
-				button.text:SetPoint("CENTER", button.cooldown, "CENTER", 0, 0)
-			end
+			button.text:SetText("")
+			button.text = button:CreateFontString(nil, "OVERLAY", "NumberFontNormalSmall") --if we don't show the cooldown animation or the icon, text should be on the parent frame
+			button.text:SetPoint("CENTER", button, "CENTER", 0, 0)
 
 			button.text:SetFont(font, EnhancedRaidFrames.db.profile["size"..i], "OUTLINE")
 			button.text:SetTextColor(EnhancedRaidFrames.db.profile["color"..i].r, EnhancedRaidFrames.db.profile["color"..i].g, EnhancedRaidFrames.db.profile["color"..i].b, EnhancedRaidFrames.db.profile["color"..i].a)
@@ -208,239 +202,244 @@ function EnhancedRaidFrames:UpdateIndicators(frame, setAppearance)
 	-- Loop over the indicators and see if we get a hit
 	for i = 1, 9 do
 		local buffcount = 1
-		for k = 1, 6 do
-			local remainingTime, displayText, count, duration, expirationTime, castBy, icon, debuffType, locatedAuraIndex, buffcount_i
+		
 
-			local button = f[frameName][i*4+k]
+		-- If we only are to show the indicator on me, then don't bother if I'm not the unit
+		if EnhancedRaidFrames.db.profile["me"..i] then
+			local uName, uRealm = UnitName(unit)
+			if uName ~= UnitName("player") or uRealm ~= nil then
+				break
+			end
+		end
+
+		-- Go through the aura strings
+		for _, auraName in ipairs(EnhancedRaidFrames.auraStrings[i]) do -- Grab each line
+			if buffcount > 6 then
+				break
+			end
+
+			local remainingTime, displayText, count, duration, expirationTime, castBy, icon, debuffType, locatedAuraIndex, auraIndex, buff
+
 			displayText = ""
 			icon = ""
 			count = 0
 			duration = 0
 			expirationTime = 0
 			castBy = ""
-
-			-- If we only are to show the indicator on me, then don't bother if I'm not the unit
-			if EnhancedRaidFrames.db.profile["me"..i] then
-				local uName, uRealm = UnitName(unit)
-				if uName ~= UnitName("player") or uRealm ~= nil then
+			auraIndex = -1
+			buff = nil
+			
+			-- Check if the aura exist on the unit
+			for j = 1, #unitBuffs[unit] do -- Check buffs
+				if tonumber(auraName) then  -- Use spell id
+					if unitBuffs[unit][j].spellId == tonumber(auraName) then
+						locatedAuraIndex = j
+					end
+				elseif unitBuffs[unit][j].auraName == auraName then -- Hit on auraName
+					locatedAuraIndex = j
+				end
+				if locatedAuraIndex and unitBuffs[unit][j].castBy == "player" then -- Keep looking if it's not cast by the player
 					break
 				end
 			end
 
-			buffcount_i = 0
-			-- Go through the aura strings
-			for _, auraName in ipairs(EnhancedRaidFrames.auraStrings[i]) do -- Grab each line
-				buffcount_i = buffcount_i + 1
-				if buffcount_i == buffcount then
-					buffcount = buffcount + 1
-
-					if not auraName then --if there's no auraName (i.e. the user never specified anything to go in this spot), stop here there's no need to keep going
-						break
-					end
-
-					-- Check if the aura exist on the unit
-					for j = 1, #unitBuffs[unit] do -- Check buffs
-						if tonumber(auraName) then  -- Use spell id
-							if unitBuffs[unit][j].spellId == tonumber(auraName) then
-								locatedAuraIndex = j
-							end
-						elseif unitBuffs[unit][j].auraName == auraName then -- Hit on auraName
+			if locatedAuraIndex then
+				count = unitBuffs[unit][locatedAuraIndex].count
+				duration = unitBuffs[unit][locatedAuraIndex].duration
+				expirationTime = unitBuffs[unit][locatedAuraIndex].expirationTime
+				castBy = unitBuffs[unit][locatedAuraIndex].castBy
+				icon = unitBuffs[unit][locatedAuraIndex].icon
+				auraIndex = unitBuffs[unit][locatedAuraIndex].auraIndex
+				buff = true
+			else
+				for j = 1, #unitDebuffs[unit] do -- Check debuffs
+					if tonumber(auraName) then  -- Use spell id
+						if unitDebuffs[unit][j].spellId == tonumber(auraName) then
 							locatedAuraIndex = j
 						end
-						if locatedAuraIndex and unitBuffs[unit][j].castBy == "player" then -- Keep looking if it's not cast by the player
-							break
-						end
+					elseif unitDebuffs[unit][j].auraName == auraName then -- Hit on auraName
+						locatedAuraIndex = j
+					elseif unitDebuffs[unit][j].debuffType == auraName then -- Hit on debufftype
+						locatedAuraIndex = j
 					end
-
-					if locatedAuraIndex then
-						count = unitBuffs[unit][locatedAuraIndex].count
-						duration = unitBuffs[unit][locatedAuraIndex].duration
-						expirationTime = unitBuffs[unit][locatedAuraIndex].expirationTime
-						castBy = unitBuffs[unit][locatedAuraIndex].castBy
-						icon = unitBuffs[unit][locatedAuraIndex].icon
-						button.auraIndex = unitBuffs[unit][locatedAuraIndex].auraIndex
-						button.buff = true
-					else
-						for j = 1, #unitDebuffs[unit] do -- Check debuffs
-							if tonumber(auraName) then  -- Use spell id
-								if unitDebuffs[unit][j].spellId == tonumber(auraName) then
-									locatedAuraIndex = j
-								end
-							elseif unitDebuffs[unit][j].auraName == auraName then -- Hit on auraName
-								locatedAuraIndex = j
-							elseif unitDebuffs[unit][j].debuffType == auraName then -- Hit on debufftype
-								locatedAuraIndex = j
-							end
-							if locatedAuraIndex and unitDebuffs[unit][j].castBy == "player" then -- Keep looking if it's not cast by the player
-								break
-							end
-						end
-
-						if locatedAuraIndex then
-							count = unitDebuffs[unit][locatedAuraIndex].count
-							duration = unitDebuffs[unit][locatedAuraIndex].duration
-							expirationTime = unitDebuffs[unit][locatedAuraIndex].expirationTime
-							castBy = unitDebuffs[unit][locatedAuraIndex].castBy
-							icon = unitDebuffs[unit][locatedAuraIndex].icon
-							debuffType = unitDebuffs[unit][locatedAuraIndex].debuffType
-							button.auraIndex = unitDebuffs[unit][locatedAuraIndex].auraIndex
-						end
-					end
-
-					if auraName:upper() == "PVP" then -- Check if we want to show pvp flag
-						if UnitIsPVP(unit) then
-							count = 0
-							expirationTime = 0
-							duration = 0
-							castBy = "player"
-							locatedAuraIndex = -1
-
-							local factionGroup = UnitFactionGroup(unit)
-							if factionGroup then
-								icon = "Interface\\GroupFrame\\UI-Group-PVP-"..factionGroup
-							end
-
-							button.auraIndex = -1
-						end
-					elseif auraName:upper() == "TOT" then -- Check if we want to show ToT flag
-						if UnitIsUnit (unit, "targettarget") then
-							count = 0
-							expirationTime = 0
-							duration = 0
-							castBy = "player"
-							locatedAuraIndex = -1
-							icon = "Interface\\Icons\\Ability_Hunter_SniperShot"
-							button.auraIndex = -1
-						end
-					end
-
-					if locatedAuraIndex then -- We found a matching spell
-						-- If we only are to show spells cast by me, make sure the spell is
-						if (EnhancedRaidFrames.db.profile["mine"..i] and castBy ~= "player") then
-							locatedAuraIndex = nil
-							icon = ""
-						else
-							if not EnhancedRaidFrames.db.profile["showIcon"..i] then -- Hide icon
-								icon = ""
-							end
-							if expirationTime == 0 then -- No expiration time = permanent
-								if not EnhancedRaidFrames.db.profile["showIcon"..i] then
-									displayText = "■" -- Only show the blob if we don't show the icon
-								end
-							else
-								if EnhancedRaidFrames.db.profile["showText"..i] then
-									-- Pretty formatting of the remaining time text
-									remainingTime = expirationTime - currentTime
-									if remainingTime > 60 then
-										displayText = string.format("%.0f", (remainingTime / 60)).."m" -- Show minutes without seconds
-									elseif remainingTime >= 1 then
-										displayText = string.format("%.0f",remainingTime) -- Show seconds without decimals
-									end
-								else
-									displayText = ""
-								end
-
-							end
-
-							-- Add stack count
-							if EnhancedRaidFrames.db.profile["stack"..i] and count > 0 then
-								if EnhancedRaidFrames.db.profile["showText"..i] and expirationTime > 0 then
-									displayText = count .."-".. displayText
-								else
-									displayText = count
-								end
-							end
-
-							-- Set color
-							if EnhancedRaidFrames.db.profile["stackColor"..i] then -- Color by stack
-								if count == 1 then
-									button.text:SetTextColor(1,0,0,1)
-								elseif count == 2 then
-									button.text:SetTextColor(1,1,0,1)
-								elseif count >= 3 then
-									button.text:SetTextColor(0,1,0,1)
-								else
-									button.text:SetTextColor(1,1,1,1)
-								end
-							elseif EnhancedRaidFrames.db.profile["debuffColor"..i] then -- Color by debuff type
-								if debuffType then
-									if debuffType == "Curse" then
-										button.text:SetTextColor(0.6,0,1,1)
-									elseif debuffType == "Disease" then
-										button.text:SetTextColor(0.6,0.4,0,1)
-									elseif debuffType == "Magic" then
-										button.text:SetTextColor(0.2,0.6,1,1)
-									elseif debuffType == "Poison" then
-										button.text:SetTextColor(0,0.6,0,1)
-									end
-								end
-							elseif EnhancedRaidFrames.db.profile["colorByTime"..i] then -- Color by remaining time
-								if remainingTime and remainingTime < 3 then
-									button.text:SetTextColor(1,0,0,1)
-								elseif remainingTime and remainingTime < 5 then
-									button.text:SetTextColor(1,1,0,1)
-								else
-									button.text:SetTextColor(EnhancedRaidFrames.db.profile["color"..i].r, EnhancedRaidFrames.db.profile["color"..i].g, EnhancedRaidFrames.db.profile["color"..i].b, EnhancedRaidFrames.db.profile["color"..i].a)
-								end
-							end
-
-							break -- We found a match, so no need to continue the for loop
-						end
+					if locatedAuraIndex and unitDebuffs[unit][j].castBy == "player" then -- Keep looking if it's not cast by the player
+						break
 					end
 				end
+
+				if locatedAuraIndex then
+					count = unitDebuffs[unit][locatedAuraIndex].count
+					duration = unitDebuffs[unit][locatedAuraIndex].duration
+					expirationTime = unitDebuffs[unit][locatedAuraIndex].expirationTime
+					castBy = unitDebuffs[unit][locatedAuraIndex].castBy
+					icon = unitDebuffs[unit][locatedAuraIndex].icon
+					debuffType = unitDebuffs[unit][locatedAuraIndex].debuffType
+					auraIndex = unitDebuffs[unit][locatedAuraIndex].auraIndex
+					buff = false
+				end
+			end
+
+			if auraName:upper() == "PVP" then -- Check if we want to show pvp flag
+				if UnitIsPVP(unit) then
+					count = 0
+					expirationTime = 0
+					duration = 0
+					castBy = "player"
+					locatedAuraIndex = -1
+
+					local factionGroup = UnitFactionGroup(unit)
+					if factionGroup then
+						icon = "Interface\\GroupFrame\\UI-Group-PVP-"..factionGroup
+					end
+
+					auraIndex = -1
+				end
+			elseif auraName:upper() == "TOT" then -- Check if we want to show ToT flag
+				if UnitIsUnit (unit, "targettarget") then
+					count = 0
+					expirationTime = 0
+					duration = 0
+					castBy = "player"
+					locatedAuraIndex = -1
+					icon = "Interface\\Icons\\Ability_Hunter_SniperShot"
+					auraIndex = -1
+				end
+			end
+
+			-- If we only are to show spells cast by me, make sure the spell is
+			if (EnhancedRaidFrames.db.profile["mine"..i] and castBy ~= "player") then
+				locatedAuraIndex = nil
+				icon = ""
 			end
 
 			-- Only show when it's missing
-			if EnhancedRaidFrames.db.profile["missing"..i] then
+			if EnhancedRaidFrames.db.profile["missing"..i] and locatedAuraIndex then
 				icon = ""
 				displayText = ""
-				if not locatedAuraIndex then -- No locatedAuraIndex means we didn't find the spell
-					if EnhancedRaidFrames.db.profile["showIcon"..i] then
-						--try to find an icon
-						if EnhancedRaidFrames.auraStrings[i][1] then --if the string is empty do nothing
-							if string.lower(EnhancedRaidFrames.auraStrings[i][1]) == "poison" then
-								icon = 132104
-							elseif string.lower(EnhancedRaidFrames.auraStrings[i][1]) == "disease" then
-								icon = 132099
-							elseif string.lower(EnhancedRaidFrames.auraStrings[i][1]) == "curse" then
-								icon = 132095
-							elseif string.lower(EnhancedRaidFrames.auraStrings[i][1]) == "magic" then
-								icon = 135894
-							else
-								_,_,icon = GetSpellInfo(EnhancedRaidFrames.auraStrings[i][1])
-							end
+			elseif EnhancedRaidFrames.db.profile["missing"..i] then
+				if EnhancedRaidFrames.db.profile["showIcon"..i] then
+					--try to find an icon
+					if auraName then --if the string is empty do nothing
+						if string.lower(auraName) == "poison" then
+							icon = 132104
+						elseif string.lower(auraName) == "disease" then
+							icon = 132099
+						elseif string.lower(auraName) == "curse" then
+							icon = 132095
+						elseif string.lower(auraName) == "magic" then
+							icon = 135894
+						else
+							_,_,icon = GetSpellInfo(auraName)
+						end
 
-							if not icon then
-								displayText = "X" --if you can't find an icon, display an X
-							end
+						if not icon then
+							displayText = "X" --if you can't find an icon, display an X
+						end
+					end
+				else
+					displayText = "X" --if we aren't showing icons, display and X
+				end
+			elseif locatedAuraIndex then -- We found a matching spell
+				if not EnhancedRaidFrames.db.profile["showIcon"..i] then -- Hide icon
+					icon = ""
+				end
+				if expirationTime == 0 then -- No expiration time = permanent
+					if not EnhancedRaidFrames.db.profile["showIcon"..i] then
+						displayText = "■" -- Only show the blob if we don't show the icon
+					end
+				else
+					if EnhancedRaidFrames.db.profile["showText"..i] then
+						-- Pretty formatting of the remaining time text
+						remainingTime = expirationTime - currentTime
+						if remainingTime > 60 then
+							displayText = string.format("%.0f", (remainingTime / 60)).."m" -- Show minutes without seconds
+						elseif remainingTime >= 1 then
+							displayText = string.format("%.0f",remainingTime) -- Show seconds without decimals
 						end
 					else
-						displayText = "X" --if we aren't showing icons, display and X
+						displayText = ""
+					end
+
+				end
+
+				-- Add stack count
+				if EnhancedRaidFrames.db.profile["stack"..i] and count > 0 then
+					if EnhancedRaidFrames.db.profile["showText"..i] and expirationTime > 0 then
+						displayText = count .."-".. displayText
+					else
+						displayText = count
 					end
 				end
+			else
+				icon = ""
+				displayText = ""
 			end
+	
 
 			--set the texture or text on a frame, and show or hide the indicator frame
-			if (icon ~= "" or displayText ~="") and UnitIsConnected(unit) and not UnitIsDeadOrGhost(unit) then
+			if auraName ~= "" and (icon ~= "" or displayText ~="") and UnitIsConnected(unit) and not UnitIsDeadOrGhost(unit) then
+				local button = f[frameName][i*4+buffcount]
+				buffcount = buffcount + 1
+
+				if auraIndex then
+					button.auraIndex = auraIndex
+				end
+				if buff ~= nil then
+					button.buff = buff
+				end
+
+				-- Set color
+				if EnhancedRaidFrames.db.profile["stackColor"..i] then -- Color by stack
+					if count == 1 then
+						button.text:SetTextColor(1,0,0,1)
+					elseif count == 2 then
+						button.text:SetTextColor(1,1,0,1)
+					elseif count >= 3 then
+						button.text:SetTextColor(0,1,0,1)
+					else
+						button.text:SetTextColor(1,1,1,1)
+					end
+				elseif EnhancedRaidFrames.db.profile["debuffColor"..i] then -- Color by debuff type
+					if debuffType then
+						if debuffType == "Curse" then
+							button.text:SetTextColor(0.6,0,1,1)
+						elseif debuffType == "Disease" then
+							button.text:SetTextColor(0.6,0.4,0,1)
+						elseif debuffType == "Magic" then
+							button.text:SetTextColor(0.2,0.6,1,1)
+						elseif debuffType == "Poison" then
+							button.text:SetTextColor(0,0.6,0,1)
+						end
+					end
+				elseif EnhancedRaidFrames.db.profile["colorByTime"..i] then -- Color by remaining time
+					if remainingTime and remainingTime < 3 then
+						button.text:SetTextColor(1,0,0,1)
+					elseif remainingTime and remainingTime < 5 then
+						button.text:SetTextColor(1,1,0,1)
+					else
+						button.text:SetTextColor(EnhancedRaidFrames.db.profile["color"..i].r, EnhancedRaidFrames.db.profile["color"..i].g, EnhancedRaidFrames.db.profile["color"..i].b, EnhancedRaidFrames.db.profile["color"..i].a)
+					end
+				end
+
 				-- show the frame
 				button:Show()
 				-- Show the text
 				button.text:SetText(displayText)
+				
 				-- Show the icon
 				button.icon:SetTexture(icon)
-			else
-				-- hide the frame
-				button:Hide()
-			end
-
-			--set cooldown animation
-			if EnhancedRaidFrames.db.profile["showCooldownAnimation"..i] and icon~="" and button:IsShown() then
-				CooldownFrame_Set(button.cooldown, expirationTime - duration, duration, true, true)
-			else
-				CooldownFrame_Clear(button.cooldown);
+				--set cooldown animation
+				if EnhancedRaidFrames.db.profile["showCooldownAnimation"..i] and icon~="" and button:IsShown() then
+					CooldownFrame_Set(button.cooldown, expirationTime - duration, duration, true, true)
+				else
+					CooldownFrame_Clear(button.cooldown);
+				end
 			end
 		end
-		
+		for k = buffcount, 6 do
+			local button = f[frameName][i*4+k]
+			button:Hide()
+		end
 	end
 
 end
