@@ -61,7 +61,7 @@ function EnhancedRaidFrames:CreateIndicators(frame)
 	-- Create indicators
 	for i = 1, 9 do
 		--We have to use this template to allow for our clicks to be passed through, otherwise our frames won't allow selecting the raidframe behind it
-		f[frameName][i] = CreateFrame("Button", nil, frame, "CompactAuraTemplate")
+		f[frameName][i] = CreateFrame("Button", nil, frame)
 		f[frameName][i]:RegisterForClicks("LeftButtonDown", "RightButtonUp");
 		f[frameName][i]:SetFrameStrata("HIGH")
 
@@ -88,6 +88,18 @@ function EnhancedRaidFrames:CreateIndicators(frame)
 		elseif i == 9 then
 			f[frameName][i]:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -PAD, PAD)
 		end
+
+		f[frameName][i].cooldown = CreateFrame("Cooldown", nil, f[frameName][i], "CooldownFrameTemplate")
+		f[frameName][i].cooldown:SetAllPoints(f[frameName][i])
+		f[frameName][i].cooldown:SetReverse(true)
+		f[frameName][i].cooldown:SetDrawEdge(false)
+		f[frameName][i].cooldown:SetDrawSwipe(true)
+		f[frameName][i].cooldown:SetSwipeColor(0, 0, 0, 0.8)
+		f[frameName][i].cooldown:Hide()
+
+		f[frameName][i].icon = f[frameName][i]:CreateTexture(nil, "BACKGROUND")
+		f[frameName][i].icon:SetAllPoints(f[frameName][i])
+		f[frameName][i].icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
 
 		--mark the position of this particular frame for use later (i.e. 1->9)
 		f[frameName][i].position = i
