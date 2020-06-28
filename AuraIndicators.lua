@@ -212,6 +212,10 @@ function EnhancedRaidFrames:UpdateIndicators(frame, setAppearance)
 			end
 		end
 
+		if EnhancedRaidFrames.db.profile["combat"..i] and InCombatLockdown() then
+			break
+		end
+
 		-- Go through the aura strings
 		for _, auraName in ipairs(EnhancedRaidFrames.auraStrings[i]) do -- Grab each line
 			if buffcount > 6 then

@@ -155,6 +155,7 @@ function EnhancedRaidFrames:CreateDefaults ()
 		defaults.profile["colorByTime"..i] = false
 		defaults.profile["missing"..i] = false
 		defaults.profile["me"..i] = false
+		defaults.profile["combat"..i] = false
 		defaults.profile["showText"..i] = false
 		defaults.profile["showCooldownAnimation"..i] = true
 		defaults.profile["showIcon"..i] = true

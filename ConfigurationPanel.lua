@@ -197,6 +197,12 @@ function EnhancedRaidFrames:CreateIndicatorOptions()
 			desc = "Only show this indicator on myself",
 			order = 40,
 		}
+		indicatorOptions.args["i"..i].args["combat"..i] = {
+			type = "toggle",
+			name = "Hide in combat",
+			desc = "Hide this indicator while in combat",
+			order = 50,
+		}
 		indicatorOptions.args["i"..i].args.textHeader = {
 			type = "header",
 			name = "Text",
