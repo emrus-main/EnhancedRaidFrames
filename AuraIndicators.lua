@@ -24,6 +24,8 @@ local _, AddonTable = ...
 local EnhancedRaidFrames = AddonTable.EnhancedRaidFrames
 
 local media = LibStub:GetLibrary("LibSharedMedia-3.0")
+local LibClassicDurations = LibStub("LibClassicDurations")
+LibClassicDurations:Register("EnhancedRaidFrames")
 local f = {} -- Indicators for the frames
 local PAD = 2
 local unitBuffs = {} -- Matrix to keep a list of all buffs on all units
@@ -411,6 +413,14 @@ function EnhancedRaidFrames:UpdateUnitAuras(unit)
 
 		if not spellId then --break the loop once we have no more buffs
 			break
+		end
+
+		if(auraName and duration == 0 ) then
+			local durationNew, expirationTimeNew = LibClassicDurations:GetAuraDurationByUnit(unit, spellId, castBy, auraName)
+			if( durationNew ) then
+				duration = durationNew
+				expirationTime = expirationTimeNew
+			end
 		end
 
 		if string.find(EnhancedRaidFrames.allAuras, "+"..auraName.."+") or string.find(EnhancedRaidFrames.allAuras, "+"..spellId.."+") then -- Only add the spell if we're watching for it
