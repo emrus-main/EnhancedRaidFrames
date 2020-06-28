@@ -187,7 +187,8 @@ function EnhancedRaidFrames:RefreshConfig()
 
 	-- Format aura strings
 	EnhancedRaidFrames.allAuras = " "
-
+	EnhancedRaidFrames.auraStrings = {{}, {}, {}, {}, {}, {}, {}, {}, {}}
+	
 	for i = 1, 9 do
 		local j = 1
 		for auraName in string.gmatch(EnhancedRaidFrames.db.profile["auras"..i], "[^\n]+") do -- Grab each line
