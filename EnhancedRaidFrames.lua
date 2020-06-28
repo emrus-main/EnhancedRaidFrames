@@ -192,10 +192,12 @@ function EnhancedRaidFrames:RefreshConfig()
 	
 	for i = 1, 9 do
 		local j = 1
-		for auraName in string.gmatch(EnhancedRaidFrames.db.profile["auras"..i], "[^\n]+") do -- Grab each line
-			auraName = string.gsub(auraName, "^%s*(.-)%s*$", "%1") -- Strip any whitespaces
-			EnhancedRaidFrames.allAuras = EnhancedRaidFrames.allAuras.."+"..auraName.."+" -- Add each watched aura to a string so we later can quickly determine if we need to look for one
-			EnhancedRaidFrames.auraStrings[i][j] = auraName
+		for auraNameLine in string.gmatch(EnhancedRaidFrames.db.profile["auras"..i], "[^\n]+") do -- Grab each line
+			for _, auraName in pairs({strsplit(",", auraNameLine)}) do
+				auraName = strtrim(auraName)
+				EnhancedRaidFrames.allAuras = EnhancedRaidFrames.allAuras.."+"..auraName.."+" -- Add each watched aura to a string so we later can quickly determine if we need to look for one
+			end
+			EnhancedRaidFrames.auraStrings[i][j] = auraNameLine
 			j = j + 1
 		end
 	end

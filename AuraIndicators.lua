@@ -217,11 +217,11 @@ function EnhancedRaidFrames:UpdateIndicators(frame, setAppearance)
 		end
 
 		-- Go through the aura strings
-		for _, auraName in ipairs(EnhancedRaidFrames.auraStrings[i]) do -- Grab each line
+		for _, auraNameLine in ipairs(EnhancedRaidFrames.auraStrings[i]) do -- Grab each line
 			if buffcount > 6 then
 				break
 			end
-
+				
 			local remainingTime, displayText, count, duration, expirationTime, castBy, icon, debuffType, locatedAuraIndex, auraIndex, buff
 
 			displayText = ""
@@ -232,88 +232,100 @@ function EnhancedRaidFrames:UpdateIndicators(frame, setAppearance)
 			castBy = ""
 			auraIndex = -1
 			buff = nil
+			baseAuraName = ""
 			
-			-- Check if the aura exist on the unit
-			for j = 1, #unitBuffs[unit] do -- Check buffs
-				if tonumber(auraName) then  -- Use spell id
-					if unitBuffs[unit][j].spellId == tonumber(auraName) then
-						locatedAuraIndex = j
-					end
-				elseif unitBuffs[unit][j].auraName == auraName then -- Hit on auraName
-					locatedAuraIndex = j
+			for _, auraName in ipairs({strsplit(",", auraNameLine)}) do
+				auraName = strtrim(auraName)
+				if baseAuraName == "" then
+					baseAuraName = auraName
 				end
-				if locatedAuraIndex and unitBuffs[unit][j].castBy == "player" then -- Keep looking if it's not cast by the player
+				-- If we already found one of the buffs break
+				if locatedAuraIndex and castBy == "player" then
 					break
 				end
-			end
 
-			if locatedAuraIndex then
-				count = unitBuffs[unit][locatedAuraIndex].count
-				duration = unitBuffs[unit][locatedAuraIndex].duration
-				expirationTime = unitBuffs[unit][locatedAuraIndex].expirationTime
-				castBy = unitBuffs[unit][locatedAuraIndex].castBy
-				icon = unitBuffs[unit][locatedAuraIndex].icon
-				auraIndex = unitBuffs[unit][locatedAuraIndex].auraIndex
-				buff = true
-			else
-				for j = 1, #unitDebuffs[unit] do -- Check debuffs
+				-- Check if the aura exist on the unit
+				for j = 1, #unitBuffs[unit] do -- Check buffs
 					if tonumber(auraName) then  -- Use spell id
-						if unitDebuffs[unit][j].spellId == tonumber(auraName) then
+						if unitBuffs[unit][j].spellId == tonumber(auraName) then
 							locatedAuraIndex = j
 						end
-					elseif unitDebuffs[unit][j].auraName == auraName then -- Hit on auraName
-						locatedAuraIndex = j
-					elseif unitDebuffs[unit][j].debuffType == auraName then -- Hit on debufftype
+					elseif unitBuffs[unit][j].auraName == auraName then -- Hit on auraName
 						locatedAuraIndex = j
 					end
-					if locatedAuraIndex and unitDebuffs[unit][j].castBy == "player" then -- Keep looking if it's not cast by the player
+					if locatedAuraIndex and unitBuffs[unit][j].castBy == "player" then -- Keep looking if it's not cast by the player
 						break
 					end
 				end
 
 				if locatedAuraIndex then
-					count = unitDebuffs[unit][locatedAuraIndex].count
-					duration = unitDebuffs[unit][locatedAuraIndex].duration
-					expirationTime = unitDebuffs[unit][locatedAuraIndex].expirationTime
-					castBy = unitDebuffs[unit][locatedAuraIndex].castBy
-					icon = unitDebuffs[unit][locatedAuraIndex].icon
-					debuffType = unitDebuffs[unit][locatedAuraIndex].debuffType
-					auraIndex = unitDebuffs[unit][locatedAuraIndex].auraIndex
-					buff = false
-				end
-			end
-
-			if auraName:upper() == "PVP" then -- Check if we want to show pvp flag
-				if UnitIsPVP(unit) then
-					count = 0
-					expirationTime = 0
-					duration = 0
-					castBy = "player"
-					locatedAuraIndex = -1
-
-					local factionGroup = UnitFactionGroup(unit)
-					if factionGroup then
-						icon = "Interface\\GroupFrame\\UI-Group-PVP-"..factionGroup
+					count = unitBuffs[unit][locatedAuraIndex].count
+					duration = unitBuffs[unit][locatedAuraIndex].duration
+					expirationTime = unitBuffs[unit][locatedAuraIndex].expirationTime
+					castBy = unitBuffs[unit][locatedAuraIndex].castBy
+					icon = unitBuffs[unit][locatedAuraIndex].icon
+					auraIndex = unitBuffs[unit][locatedAuraIndex].auraIndex
+					buff = true
+				else
+					for j = 1, #unitDebuffs[unit] do -- Check debuffs
+						if tonumber(auraName) then  -- Use spell id
+							if unitDebuffs[unit][j].spellId == tonumber(auraName) then
+								locatedAuraIndex = j
+							end
+						elseif unitDebuffs[unit][j].auraName == auraName then -- Hit on auraName
+							locatedAuraIndex = j
+						elseif unitDebuffs[unit][j].debuffType == auraName then -- Hit on debufftype
+							locatedAuraIndex = j
+						end
+						if locatedAuraIndex and unitDebuffs[unit][j].castBy == "player" then -- Keep looking if it's not cast by the player
+							break
+						end
 					end
 
-					auraIndex = -1
+					if locatedAuraIndex then
+						count = unitDebuffs[unit][locatedAuraIndex].count
+						duration = unitDebuffs[unit][locatedAuraIndex].duration
+						expirationTime = unitDebuffs[unit][locatedAuraIndex].expirationTime
+						castBy = unitDebuffs[unit][locatedAuraIndex].castBy
+						icon = unitDebuffs[unit][locatedAuraIndex].icon
+						debuffType = unitDebuffs[unit][locatedAuraIndex].debuffType
+						auraIndex = unitDebuffs[unit][locatedAuraIndex].auraIndex
+						buff = false
+					end
 				end
-			elseif auraName:upper() == "TOT" then -- Check if we want to show ToT flag
-				if UnitIsUnit (unit, "targettarget") then
-					count = 0
-					expirationTime = 0
-					duration = 0
-					castBy = "player"
-					locatedAuraIndex = -1
-					icon = "Interface\\Icons\\Ability_Hunter_SniperShot"
-					auraIndex = -1
-				end
-			end
 
-			-- If we only are to show spells cast by me, make sure the spell is
-			if (EnhancedRaidFrames.db.profile["mine"..i] and castBy ~= "player") then
-				locatedAuraIndex = nil
-				icon = ""
+				if auraName:upper() == "PVP" then -- Check if we want to show pvp flag
+					if UnitIsPVP(unit) then
+						count = 0
+						expirationTime = 0
+						duration = 0
+						castBy = "player"
+						locatedAuraIndex = -1
+
+						local factionGroup = UnitFactionGroup(unit)
+						if factionGroup then
+							icon = "Interface\\GroupFrame\\UI-Group-PVP-"..factionGroup
+						end
+
+						auraIndex = -1
+					end
+				elseif auraName:upper() == "TOT" then -- Check if we want to show ToT flag
+					if UnitIsUnit (unit, "targettarget") then
+						count = 0
+						expirationTime = 0
+						duration = 0
+						castBy = "player"
+						locatedAuraIndex = -1
+						icon = "Interface\\Icons\\Ability_Hunter_SniperShot"
+						auraIndex = -1
+					end
+				end
+
+				-- If we only are to show spells cast by me, make sure the spell is
+				if (EnhancedRaidFrames.db.profile["mine"..i] and castBy ~= "player") then
+					locatedAuraIndex = nil
+					icon = ""
+				end
 			end
 
 			-- Only show when it's missing
@@ -323,17 +335,17 @@ function EnhancedRaidFrames:UpdateIndicators(frame, setAppearance)
 			elseif EnhancedRaidFrames.db.profile["missing"..i] then
 				if EnhancedRaidFrames.db.profile["showIcon"..i] then
 					--try to find an icon
-					if auraName then --if the string is empty do nothing
-						if string.lower(auraName) == "poison" then
+					if baseAuraName then --if the string is empty do nothing
+						if string.lower(baseAuraName) == "poison" then
 							icon = 132104
-						elseif string.lower(auraName) == "disease" then
+						elseif string.lower(baseAuraName) == "disease" then
 							icon = 132099
-						elseif string.lower(auraName) == "curse" then
+						elseif string.lower(baseAuraName) == "curse" then
 							icon = 132095
-						elseif string.lower(auraName) == "magic" then
+						elseif string.lower(baseAuraName) == "magic" then
 							icon = 135894
 						else
-							_,_,icon = GetSpellInfo(auraName)
+							_,_,icon = GetSpellInfo(baseAuraName)
 						end
 
 						if not icon then
@@ -378,10 +390,10 @@ function EnhancedRaidFrames:UpdateIndicators(frame, setAppearance)
 				icon = ""
 				displayText = ""
 			end
-	
 
+			
 			--set the texture or text on a frame, and show or hide the indicator frame
-			if auraName ~= "" and (icon ~= "" or displayText ~="") and UnitIsConnected(unit) and not UnitIsDeadOrGhost(unit) then
+			if baseAuraName ~= "" and (icon ~= "" or displayText ~="") and UnitIsConnected(unit) and not UnitIsDeadOrGhost(unit) then
 				local button = f[frameName][i*4+buffcount]
 				buffcount = buffcount + 1
 
